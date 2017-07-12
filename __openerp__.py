@@ -4,7 +4,7 @@
     'version': '0.1',
     'depends': ['base','account','sale','branches','stock'],
     'data': [
-	#'account_view.xml',
+	'return_view.xml',
 	#'account_report.xml',
 	#'report_movimientos_caja.xml',
 	#'security/ir.model.access.csv',

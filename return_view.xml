@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+	<!-- account_voucher.view_vendor_receipt_dialog_form -->
+
+
+        <record id="view_order_form_gi" model="ir.ui.view">
+            <field name="name">view.order.form.gi</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form" />
+            <field name="arch" type="xml">
+		<field name="company_id" position="after">
+			<group>	
+				<field name="return_picking_id" />
+			</group>
+		</field>
+	    </field>
+	</record>
+
+    </data>
+</openerp>
