@@ -95,4 +95,36 @@ class sale_order(osv.osv):
 		return res
 
 
+	def action_view_delivery(self, cr, uid, ids, context=None):
+        	'''
+	        This function returns an action that display existing delivery orders
+        	of given sales order ids. It can either be a in a list or in a form
+	        view, if there is only one delivery order to show.
+        	'''
+
+	        mod_obj = self.pool.get('ir.model.data')
+        	act_obj = self.pool.get('ir.actions.act_window')
+
+	        result = mod_obj.get_object_reference(cr, uid, 'stock', 'action_picking_tree_all')
+        	id = result and result[1] or False
+	        result = act_obj.read(cr, uid, [id], context=context)[0]
+
+        	#compute the number of delivery orders to display
+	        pick_ids = []
+        	for so in self.browse(cr, uid, ids, context=context):
+	            pick_ids += [picking.id for picking in so.picking_ids]
+		    if so.return_picking_id:
+			pick_ids.append(so.return_picking_id.id)
+
+        	#choose the view_mode accordingly
+	        if len(pick_ids) > 1:
+        	    result['domain'] = "[('id','in',[" + ','.join(map(str, pick_ids)) + "])]"
+	        else:
+        	    res = mod_obj.get_object_reference(cr, uid, 'stock', 'view_picking_form')
+	            result['views'] = [(res and res[1] or False, 'form')]
+        	    result['res_id'] = pick_ids and pick_ids[0] or False
+	        return result
+
+
+
 sale_order()
