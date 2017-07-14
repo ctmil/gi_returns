@@ -85,4 +85,14 @@ class sale_order(osv.osv):
 						return_id = self.pool.get('stock.move').action_cancel(cr,uid,move_id,context)
         	return res
 
+	def action_cancel(self, cr, uid, ids, context=None):
+        	res = super(sale_order, self).action_cancel(cr,uid,ids,context)
+		for order_id in ids:
+			order = self.pool.get('sale.order').browse(cr,uid,order_id)
+			if order.return_picking_id:
+				return_picking = order.return_picking_id
+				return_id = self.pool.get('stock.picking').action_cancel(cr,uid,[return_picking.id],context)
+		return res
+
+
 sale_order()
