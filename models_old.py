@@ -46,14 +46,16 @@ class sale_order(osv.osv):
 		if not picking_type_id:
 			raise Warning('No hay movimiento de devolucion definido')
 		user = order.user_id
-		journal_id = self.pool.get('account.responsabilities.mapping').search(cr,uid,[('type','=','sale_refund'),\
+		mapping_ids = self.pool.get('account.responsabilities.mapping').search(cr,uid,[\
 							('responsability_id','=',order.partner_id.responsability_id.id),\
 							('point_of_sale','=',user.branch_id.point_of_sale)])
-		if not journal_id:
+		if not mapping_ids:
 			raise Warning('No hay journal de devolucion definido')
 		else:
-			if type(journal_id) == list:
-				journal_id = journal_id[0]
+			for mapping_id in mapping_ids:
+				mapping = self.pool.get('account.responsabilities.mapping').browse(cr,uid,mapping_id)
+				if mapping.journal_type == 'sale_refund':
+					journal_id = mapping.journal_id.id
 		vals_picking = {
 			'name': 'RET ' + order.name,
 			'partner_id': order.partner_id.id,
@@ -101,7 +103,7 @@ class sale_order(osv.osv):
 						'product_id': return_line['product_id'],
 						'name': return_line['name'],
 						'invoice_line_tax_id': [(6,0,return_line['taxes_id'])],
-						'quantity': return_line['product_uom_qty'] * (-1),
+						'quantity': return_line['product_uom_qty'],
 						'price_unit': return_line['price_unit'],
 						}
 					return_id = self.pool.get('account.invoice.line').create(cr,uid,vals_line)
@@ -116,6 +118,7 @@ class sale_order(osv.osv):
 
 			vals_sale_order = {
 				'return_picking_id': return_picking_id,
+				'refund_id': refund_id,
 				}
 			return_id = self.pool.get('sale.order').write(cr,uid,ids[0],vals_sale_order,context)
 
