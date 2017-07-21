@@ -12,6 +12,7 @@
 		<field name="company_id" position="after">
 			<group>	
 				<field name="return_picking_id" />
+				<field name="refund_id" />
 			</group>
 		</field>
 	    </field>

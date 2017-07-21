@@ -45,6 +45,15 @@ class sale_order(osv.osv):
 				pick_type = picking_type
 		if not picking_type_id:
 			raise Warning('No hay movimiento de devolucion definido')
+		user = order.user_id
+		journal_id = self.pool.get('account.responsabilities.mapping').search(cr,uid,[('type','=','sale_refund'),\
+							('responsability_id','=',partner.responsability_id.id),\
+							('point_of_sale','=',user.branch_id.point_of_sale)])
+		if not journal_id:
+			raise Warning('No hay journal de devolucion definido')
+		else:
+			if type(journal_id) == list:
+				journal_id = journal_id[0]
 		vals_picking = {
 			'name': 'RET ' + order.name,
 			'partner_id': order.partner_id.id,
@@ -52,6 +61,15 @@ class sale_order(osv.osv):
 			'origin': order.name,
 			'move_type': 'one',
 			'picking_type_id': picking_type_id,
+			}
+		
+		vals_refund = {
+			'partner_id': order.partner_id.id,
+			'account_id': order.partner_id.property_account_receivable.id,
+			'journal_id': journal_id,
+			'type': 'out_refund',
+			'origin': order.origin,
+			'date_invoice': str(date.today())
 			}
 		return_lines = []
 		for line in order.order_line:
@@ -61,6 +79,8 @@ class sale_order(osv.osv):
 					'name': 'RET ' + order.name + ' - ' + line.product_id.name,
 					'product_id': line.product_id.id,
 					'product_uom': line.product_uom.id,
+					'price_unit': line.price_unit,
+					'taxes_id': line.tax_id.ids,
 					'product_uom_qty': line.product_uom_qty * (-1),
 					'location_id': picking_type.default_location_src_id.id,
 					'location_dest_id': picking_type.default_location_dest_id.id,
@@ -68,13 +88,23 @@ class sale_order(osv.osv):
 				return_lines.append(vals_line)
 		if return_lines:
 			return_picking_id = self.pool.get('stock.picking').create(cr,uid,vals_picking,context)
-			vals_sale_order = {
-				'return_picking_id': return_picking_id,
-				}
 			for return_line in return_lines:
 				return_line['picking_id'] = return_picking_id
 				move_id = self.pool.get('stock.move').create(cr,uid,return_line,context)
-			return_id = self.pool.get('sale.order').write(cr,uid,ids[0],vals_sale_order,context)
+
+			# Creates refund
+			refund_id = self.pool.get('account.invoice').create(cr,uid,vals_refund)
+			if refund_id:
+				for return_line in return_lines:
+					vals_line = {
+						'invoice_id': refund_id,
+						'product_id': return_line['product_id'],
+						'name': return_line['name'],
+						'invoice_line_tax_id': [(6,0,return_line['taxes_id'])],
+						'quantity': return_line['product_uom_qty'] * (-1),
+						'price_unit': return_line['price_unit'],
+						}
+					return_id = self.pool.get('account.invoice.line').create(cr,uid,vals_line)
 
 			# Deletes stock moves with 0 qty
 			for picking_id in order.picking_ids:
@@ -83,6 +113,13 @@ class sale_order(osv.osv):
 					stock_move = self.pool.get('stock.move').browse(cr,uid,move_id,context)
 					if stock_move.product_uom_qty == 0:
 						return_id = self.pool.get('stock.move').action_cancel(cr,uid,move_id,context)
+
+			vals_sale_order = {
+				'return_picking_id': return_picking_id,
+				}
+			return_id = self.pool.get('sale.order').write(cr,uid,ids[0],vals_sale_order,context)
+
+
         	return res
 
 	def action_cancel(self, cr, uid, ids, context=None):

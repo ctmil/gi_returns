@@ -2,7 +2,7 @@
     'name': 'GI Returns',
     'category': 'Sales',
     'version': '0.1',
-    'depends': ['base','account','sale','stock','sale_stock'],
+    'depends': ['base','account','sale','stock','sale_stock','gi_accounting','branches'],
     'data': [
 	'return_view.xml',
 	#'account_report.xml',
