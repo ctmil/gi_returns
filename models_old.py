@@ -34,6 +34,8 @@ class sale_order(osv.osv):
 
 	def action_button_confirm(self, cr, uid, ids, context=None):
         	res = super(sale_order, self).action_button_confirm(cr,uid,ids,context)
+		if not res:
+			return res
 		order = self.pool.get('sale.order').browse(cr,uid,ids[0])
 		picking_type_id = None
 		picking_type_ids = self.pool.get('stock.picking.type').search(cr,uid,[('code','=','incoming'),('warehouse_id','=',order.warehouse_id.id)])
