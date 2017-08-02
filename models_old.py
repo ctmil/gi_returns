@@ -51,6 +51,7 @@ class sale_order(osv.osv):
 		mapping_ids = self.pool.get('account.responsabilities.mapping').search(cr,uid,[\
 							('responsability_id','=',order.partner_id.responsability_id.id),\
 							('point_of_sale','=',user.branch_id.point_of_sale)])
+		journal_id = None
 		if not mapping_ids:
 			raise Warning('No hay journal de devolucion definido')
 		else:
